@@ -229,3 +229,83 @@ node index.js https://medium.com/your-article-url
   ```bash
   🔒 https://medium.com/your-article-url is NOT premium
   ```
+
+# TryHackMe Streak Notifier
+
+This project monitors your TryHackMe streak and sends an alert to a Telegram channel if the streak does not increase.
+
+## Requirements
+
+Install dependencies using:
+```bash
+pip install -r requirements.txt
+```
+
+## Setup
+
+1. Create a `.env` file and add your bot token and channel ID:
+   ```ini
+   BOT_TOKEN=your_bot_token
+   CHANNEL_ID=your_channel_id
+   ```
+
+2. Run the script:
+   ```bash
+   python script.py
+   ```
+
+## How It Works
+- Fetches your current TryHackMe streak from the API.
+- Compares it with the previously stored streak in `streak.txt`.
+- If the streak has not increased, it sends an alert to the configured Telegram channel.
+
+## Notes
+- Ensure `streak.txt` exists or the script will create it.
+- The script should be run periodically (e.g., via a cron job) to check streak updates.
+
+Github Action usage of this script:
+```yml
+name: Check THM Streak
+
+on:
+  schedule:
+    - cron: "30 16 * * *"
+  workflow_dispatch:
+
+jobs:
+  check-streak:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to allow committing changes
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 python-dotenv
+
+      - name: Create .env file
+        run: |
+          echo "BOT_TOKEN=${{ secrets.BOT_TOKEN }}" > .env
+          echo "CHANNEL_ID=${{ secrets.CHANNEL_ID }}" >> .env
+
+      - name: Run streak check
+        run: python script.py
+
+      - name: Commit streak changes
+        id: commit
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add streak.txt
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update streak.txt [skip ci]" && git push)
+
+```
